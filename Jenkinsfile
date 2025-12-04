@@ -38,6 +38,7 @@ pipeline {
            steps {
                dir('Amazon') {
                    sh 'mvn clean install'
+                   echo "build success"
                }
            }
        }
