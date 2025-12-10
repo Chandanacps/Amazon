@@ -10,15 +10,14 @@ pipeline {
     }
 
     environment {
-        SONAR_SERVER = "sonarqube"        // Name from Jenkins Global Configuration
-        SONAR_TOKEN  = "sonar-token"      // Jenkins Secret Text credential ID
+        SONAR_SERVER = "sonarqube"
+        SONAR_TOKEN  = "sonar-token"
         TOMCAT_CRED  = "local tomcat user"
         WAR_BACKUP_DIR = "backup"
     }
 
     stages {
 
-        /* ================== SELECT ENVIRONMENT ================== */
         stage('Select Environment') {
             steps {
                 script {
@@ -36,32 +35,21 @@ pipeline {
             }
         }
 
-        /* ================== SONARQUBE ANALYSIS ================== */
+        /* ================== FIXED SONARQUBE ANALYSIS ================== */
         stage('SonarQube Analysis') {
-            environment {
-                PATH = "$PATH:/opt/sonar-scanner/bin/sonar-scanner"    // <-- ADD system scanner path
-            }
             steps {
-                script {
-                    withSonarQubeEnv("${SONAR_SERVER}") {
-                        withCredentials([string(credentialsId: SONAR_TOKEN, variable: 'TOKEN')]) {
-
-                            sh """
-                                /opt/sonar-scanner/bin/sonar-scanner \
-                                    -Dsonar.projectKey=Amazon \
-                                    -Dsonar.projectName=Amazon \
-                                    -Dsonar.sources=Amazon \
-                                    -Dsonar.java.binaries=Amazon/Amazon-Web/target \
-                                    -Dsonar.host.url=$SONAR_HOST_URL \
-                                    -Dsonar.login=$TOKEN
-                            """
-                        }
-                    }
+                withSonarQubeEnv("${SONAR_SERVER}") {
+                    sh """
+                        mvn sonar:sonar \
+                            -Dsonar.projectKey=Amazon \
+                            -Dsonar.projectName=Amazon \
+                            -Dsonar.sources=Amazon \
+                            -Dsonar.java.binaries=Amazon/Amazon-Web/target
+                    """
                 }
             }
         }
 
-        /* ================== COMPILE ================== */
         stage('Compile') {
             steps {
                 dir('Amazon') {
@@ -70,17 +58,15 @@ pipeline {
             }
         }
 
-        /* ================== UNIT TEST ================== */
         stage('Unit Test') {
             steps {
                 dir('Amazon') {
                     sh 'mvn test -B'
                 }
-                junit '*/target/surefire-reports/.xml'
+                junit '*/target/surefire-reports/*.xml'
             }
         }
 
-        /* ================== PACKAGE WAR ================== */
         stage('Package WAR') {
             steps {
                 dir('Amazon') {
@@ -89,7 +75,6 @@ pipeline {
             }
         }
 
-        /* ================== BACKUP WAR ================== */
         stage('Backup WAR') {
             steps {
                 sh "mkdir -p ${WAR_BACKUP_DIR}"
@@ -98,7 +83,6 @@ pipeline {
             }
         }
 
-        /* ================== DEPLOY TO TOMCAT ================== */
         stage('Deploy to Tomcat') {
             steps {
                 script {
