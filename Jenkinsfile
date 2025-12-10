@@ -22,12 +22,12 @@ pipeline {
         stage('Select Environment') {
             steps {
                 script {
-                    def BRANCH = (env.BRANCH_NAME ?: "main").toLowerCase()
+                    def BRANCH = (env.BRANCH_NAME ?: "master").toLowerCase()
 
                     env.DEPLOY_ENV =
                         (BRANCH.startsWith('dev'))  ? 'dev'  :
                         (BRANCH.startsWith('qa'))   ? 'qa'   :
-                        (BRANCH.startsWith('prod') || BRANCH == 'main') ? 'prod' :
+                        (BRANCH.startsWith('prod') || BRANCH == 'master') ? 'prod' :
                                                                            params.DEPLOY_ENV
 
                     echo "Branch Name: ${BRANCH}"
@@ -38,20 +38,23 @@ pipeline {
 
         /* ================== SONARQUBE ANALYSIS ================== */
         stage('SonarQube Analysis') {
+            environment {
+                PATH = "$PATH:/opt/sonar-scanner/bin/sonar-scanner"    // <-- ADD system scanner path
+            }
             steps {
                 script {
                     withSonarQubeEnv("${SONAR_SERVER}") {
                         withCredentials([string(credentialsId: SONAR_TOKEN, variable: 'TOKEN')]) {
 
-                            sh '''
-                                sonar-scanner \
+                            sh """
+                                /opt/sonar-scanner/bin/sonar-scanner \
                                     -Dsonar.projectKey=Amazon \
                                     -Dsonar.projectName=Amazon \
                                     -Dsonar.sources=Amazon \
                                     -Dsonar.java.binaries=Amazon/Amazon-Web/target \
                                     -Dsonar.host.url=$SONAR_HOST_URL \
                                     -Dsonar.login=$TOKEN
-                            '''
+                            """
                         }
                     }
                 }
