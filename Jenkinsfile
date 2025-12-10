@@ -103,9 +103,9 @@ pipeline {
             steps {
                 script {
                     def HOST =
-                        (env.DEPLOY_ENV == 'dev')  ? "localhost:8085" :
-                        (env.DEPLOY_ENV == 'qa')   ? "localhost:8092" :
-                                                      "localhost:8081"
+                        (env.DEPLOY_ENV == 'dev')  ? "localhost:8081" :
+                        (env.DEPLOY_ENV == 'qa')   ? "localhost:8082" :
+                                                      "localhost:8083"
 
                     echo "Deploying to: ${HOST}"
 
